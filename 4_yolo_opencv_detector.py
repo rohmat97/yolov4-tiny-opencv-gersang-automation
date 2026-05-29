@@ -19,11 +19,10 @@ import cv2 as cv
 import os
 import random
 
-# Define the path to the batch file
-batch_file_path = r"E:\gm_ai\yolo-opencv-detector-main\yolo-opencv-detector-main\run_yolo_detector.bat"
+# Ensure the working directory is set to the directory of this script
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-# Run the batch file to execute the Python script with administrative privileges
-os.system(batch_file_path)
+# The batch file execution is handled externally via run_detect_and_click.bat to run as Administrator.
 
 
 # In[2]:
@@ -195,8 +194,43 @@ window_name = "Gersang"
 cfg_file_name = "./yolov4-tiny/yolov4-tiny-custom.cfg"
 weights_file_name = "yolov4-tiny-custom_last.weights"
 
-wincap = WindowCapture(window_name)
-improc = ImageProcessor(wincap.get_window_size(), cfg_file_name, weights_file_name)
+# Check if configuration file exists
+if not os.path.exists(cfg_file_name):
+    print(f"Error: YOLO configuration file not found at: {os.path.abspath(cfg_file_name).replace('\\', '/')}")
+    input("\nPress Enter to exit...")
+    exit(1)
+
+# Check if weights file exists
+if not os.path.exists(weights_file_name):
+    print(f"Error: Trained model weights file '{weights_file_name}' not found!")
+    print(f"Expected path: {os.path.abspath(weights_file_name).replace('\\', '/')}")
+    print("\nTo resolve this:")
+    print("1. If you haven't trained the model yet, follow the Colab training steps in 'project_execution_guide.md'.")
+    print("2. If you already trained it, download the '.weights' file from your Google Drive and put it in this folder.")
+    input("\nPress Enter to exit...")
+    exit(1)
+
+try:
+    print(f"Searching for game window: '{window_name}'...")
+    wincap = WindowCapture(window_name)
+    print("Game window found!")
+except Exception as e:
+    print(f"\nError: Could not capture game window.")
+    print(f"Details: {e}")
+    print(f"Please ensure that the game '{window_name}' is open, running in windowed mode, and visible on your screen.")
+    input("\nPress Enter to exit...")
+    exit(1)
+
+try:
+    print("Loading YOLOv4-tiny model into OpenCV DNN...")
+    improc = ImageProcessor(wincap.get_window_size(), cfg_file_name, weights_file_name)
+    print("Model loaded successfully! Starting detection loop...")
+except Exception as e:
+    print(f"\nError: Could not initialize ImageProcessor (OpenCV DNN network).")
+    print(f"Details: {e}")
+    input("\nPress Enter to exit...")
+    exit(1)
+
 
 while(True):
     
