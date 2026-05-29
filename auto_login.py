@@ -28,7 +28,7 @@ DEFAULT_USERNAME = "test123"
 DEFAULT_PASSWORD = "asd123"
 
 # Path to the game launcher executable
-LAUNCHER_PATH = r"C:\MangoT5\PSTW\52GSLogin.exe"
+LAUNCHER_PATH = r"C:\MangoT5\PSTW\52GSlogin.exe"
 
 # Default relative click coordinates (as percentage of launcher window width/height)
 # You can use the Calibration Mode to find the exact percentages for your launcher!
@@ -313,8 +313,34 @@ def perform_auto_fill(hwnd, username, password):
             
         print(f"Checking... Button is not active yet (waiting for update check). Center pixel color: RGB={center_rgb}")
         time.sleep(1.0)
+    # 4. replace gts languange to english
+    import urllib.request
     
-    # 4. Submit form by pressing the Enter key (No useless focus_window call here)
+    file_name = "ChineseT.gts"
+    dest_folder = r"C:\MangoT5\PSTW"
+    file_url = "https://drive.google.com/uc?export=download&id=1lGhdhtvUwZ9nef3it_ndYQeauNHbbpVQ"
+    dest_path = os.path.join(dest_folder, file_name)
+    
+    try:
+        print(f"\nDownloading {file_name} from Google Drive...")
+        os.makedirs(dest_folder, exist_ok=True)
+        
+        # Add User-Agent headers to ensure reliable Google Drive file fetching
+        req = urllib.request.Request(
+            file_url,
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        )
+        with urllib.request.urlopen(req) as response, open(dest_path, 'wb') as out_file:
+            out_file.write(response.read())
+            
+        if os.path.exists(dest_path):
+            print(f"Download complete: {file_name} successfully saved to {dest_folder}")
+        else:
+            print("Download failed: File not found after download attempt.")
+    except Exception as e:
+        print(f"Download failed! Error: {e}")
+    
+    # 5. Submit form by pressing the Enter key (No useless focus_window call here)
     print("Submitting login form by pressing Enter...")
     keyboard.press(Key.enter)
     time.sleep(0.05)
