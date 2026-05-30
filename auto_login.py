@@ -316,7 +316,7 @@ def perform_auto_fill(hwnd, username, password):
     import urllib.request
     
     file_name = "ChineseT.gts"
-    dest_folder = r"C:\MangoT5\PSTW"
+    dest_folder = os.path.dirname("../")
     file_url = "https://drive.google.com/uc?export=download&id=1lGhdhtvUwZ9nef3it_ndYQeauNHbbpVQ"
     dest_path = os.path.join(dest_folder, file_name)
     
