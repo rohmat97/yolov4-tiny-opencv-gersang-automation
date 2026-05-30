@@ -349,7 +349,12 @@ def perform_auto_fill(hwnd, username, password):
 
 def load_credentials():
     """Loads the username and password from a local credentials.txt file, auto-creating a template and exiting if missing."""
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # Determine the directory containing the running script or compiled .exe
+    if getattr(sys, 'frozen', False):
+        script_dir = os.path.dirname(sys.executable)
+    else:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        
     credentials_path = os.path.join(script_dir, "credentials.txt")
     
     # If the credentials file does not exist, create a blank template and exit
