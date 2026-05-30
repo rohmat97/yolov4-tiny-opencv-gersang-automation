@@ -1,226 +1,160 @@
+# YOLOv4-tiny Object Detection, Auto Combat, and Auto Login System for Gersang
+
+This repository implements a real-time object detection, automated combat, and zero-touch auto-login system for the PC game "Gersang" (巨商) using YOLOv4-tiny, OpenCV, and native Windows API keyboard/mouse event simulation.
 
 ---
 
-## Disclaimer / 聲明
+## ⚠️ Disclaimer
 
 This project is intended for **educational and learning purposes only**.  
 All automation features are implemented solely to explore real-time object detection, model deployment, and system control integration in a safe, offline environment.
 
-The game "Gersang" (巨商) is used purely as a technical testbed for computer vision application, without modifying game memory or interfering with network communication.
+The game "Gersang" is used purely as a technical testbed for computer vision applications, without modifying game memory, reading active processes' memory, or interfering with network communications. All automation operates strictly through standard window capture and OS-level hardware input simulation.
 
 Please do not use this project or its derived components for any unethical behavior, including but not limited to:
-- Online cheating
-- Violation of game terms of service
-- Unauthorized automation in multiplayer environments
+- Online cheating or botting in multiplayer environments
+- Violations of the game's terms of service
+- Unauthorized actions that disrupt the game experience for others
 
 ---
 
-本專案僅供**學術研究與個人學習使用**。  
-本系統之自動化功能，僅用於探討即時影像辨識、深度學習模型部署與系統整合等技術流程，並未涉及任何記憶體操作或網路干擾。
-
-《巨商》僅作為電腦視覺應用的測試平台，所有功能執行於本地端視窗擷取，不會對遊戲伺服器或其他玩家產生影響。
-
-請勿將本專案或其延伸應用於以下行為：
-- 線上作弊行為
-- 違反遊戲使用條款
-- 多人遊戲環境中的未經授權自動化操作
-
-
----
-
-
-# YOLOv4-tiny Object Detection and Auto Combat System for Gersang
-
-This project implements a real-time object detection and automation system for the PC game "Gersang" using YOLOv4-tiny, OpenCV, and keyboard/mouse input simulation.
-
-The system detects in-game enemies (e.g., skeleton monsters), and automatically performs combat actions such as targeting, pressing keys, and attacking based on model predictions.
-
----
-
-## 🎥 Demo Video
+## 🎥 Auto Combat Demo Video
 
 [![Watch the video](https://img.youtube.com/vi/k_GV45inPjE/0.jpg)](https://youtu.be/k_GV45inPjE)
 
 ---
 
-## Features
+## 🚀 Key Features
 
-- Real-time detection using a custom-trained YOLOv4-tiny model
-- Game screen capture via Windows API (`win32gui`, `win32ui`)
-- Auto control of mouse position and keyboard actions via `pynput`
-- End-to-end pipeline from data collection to model deployment
-- Fully offline execution on Windows (no game API injection required)
+### 1. Zero-Touch Auto Login System
+A standalone credential filler and launcher automation macro:
+- **Clipboard Injection Bypass**: Avoids detectable raw key typing by directly injecting credentials via Windows clipboard pasting (`Ctrl + V`).
+- **GPU-Bypassing Screen DC Scanner**: Uses a highly efficient screen GDI device context scanner that bypasses GPU-accelerated window blackouts to capture actual pixels.
+- **Dynamic Bounding-Box Color Polling**: Scans the button region at a step of 5 pixels (<2ms execution) for the golden-beige active color to automatically submit as soon as the files update check completes.
+- **DPI and Border Independent**: Utilizes absolute `ClientToScreen` coordinate translations, making the macro immune to custom themes, title bar sizes, and Windows DPI scaling (125%, 150%, etc.).
+- **Credentials Security**: Automatically ignores and hides credentials behind a local, Git-ignored `credentials.txt` file.
 
-## Technologies Used
+### 2. YOLOv4-tiny Real-Time Auto Combat Bot
+A deep learning-based automated combat macro:
+- **High-Speed Window Capturing**: Grabs the game window frames using fast native Windows GDI `BitBlt` transfers.
+- **Real-Time Bounding Box Inference**: Detects target monsters (e.g. skeleton bowmen) using custom-trained YOLOv4-tiny models executed inside OpenCV's DNN network.
+- **Hardware-Level Simulators**: Automatically Z-orders target coordinates, translates positions, and injects combat keystrokes (`G`, `1`, `Space`) to defeat targets automatically.
+
+---
+
+## 🛠️ Technologies Used
 
 | Component | Description |
 |----------|-------------|
-| YOLOv4-tiny (Darknet) | Lightweight object detection model |
-| OpenCV (cv2.dnn) | Model inference and image preprocessing |
-| win32gui / win32ui | Capture specific game window content |
-| pynput | Keyboard and mouse event simulation |
-| Google Colab + AlexeyAB/darknet | Model training environment |
-| makesense.ai | Image annotation tool (YOLO format) |
+| YOLOv4-tiny (Darknet) | Lightweight, low-latency deep learning object detection model |
+| OpenCV (cv2.dnn) | Fast model inference and image preprocessing |
+| win32gui / win32ui | Captures game window client contents natively |
+| pynput | Simulates native hardware keyboard and mouse inputs |
+| PyInstaller | Standalone Windows `.exe` compiler |
+| AlexeyAB/darknet | Model training environment (Google Colab T4 GPU) |
+| makesense.ai | Bounding-box image annotation tool (YOLO format) |
 
-## Project Directory Overview
-
-```
-yoho_gm_test/
-├── 1_generate_dataset.ipynb
-├── 2_label_dataset.ipynb
-├── 3_yolo_model_training.ipynb
-├── 4_yolo_opencv_detector.ipynb
-├── yolov4-tiny/
-│   ├── yolov4-tiny-custom.cfg
-│   ├── yolov4-tiny-custom_last.weights
-│   ├── obj.names / obj.data
-├── images/
-├── obj/
-├── requirements.txt
-```
-
-## Training Workflow
-
-### 1. Image Collection
-```python
-WindowCapture("Gersang").generate_image_dataset()
-```
-This will continuously capture images from the game window and save them into the images/ folder.
-
-### 2. Annotation
-
-- Use https://makesense.ai to label in-game enemies
-- Export labels in YOLO format
-- Place `.txt` and `.jpg` files together
-
-### 3. Configuration
-
-- Use `2_label_dataset.ipynb` to generate `obj.names`, `obj.data`, and `yolov4-tiny-custom.cfg`
-
-### 4. Model Training
-
-Upload training data to Google Drive, then run the following command in Google Colab:
-```bash
-./darknet detector train data/obj.data cfg/yolov4-tiny-custom.cfg yolov4-tiny.conv.29 -dont_show
-```
-
-### 5. Export Trained Weights
-
-After training completes in Google Colab, download the generated weights file:
-
-```
-yolov4-tiny-custom_last.weights
-```
-
-Place it in the following directory with your config file:
-
-```
-C:\Users\dasuk\OneDrive\Documents\exploration\yolov4-tiny-opencv-gersang-automation\yolov4-tiny/
-├── yolov4-tiny-custom.cfg
-
-# yolov4-tiny-custom_last.weights placement options:
-# 1. Place it inside the yolov4-tiny folder (recommended for organization)
-# 2. Place it in the project root directory (e.g., alongside your .py script)
-
-C:\Users\dasuk\OneDrive\Documents\exploration\yolov4-tiny-opencv-gersang-automation\yolov4-tiny-custom_last.weights
-```
-
-Make sure your detection script is configured like this:
-
-```python
-cfg_file_name = "C:\Users\dasuk\OneDrive\Documents\exploration\yolov4-tiny-opencv-gersang-automation\yolov4-tiny/yolov4-tiny-custom.cfg"
-weights_file_name = "yolov4-tiny-custom_last.weights"
-window_name = "Gersang"
-```
-
-### 6. Detection Execution
-
-Run `4_yolo_opencv_detector.ipynb` to begin detection and simulate input.
-
-## Technical Notes
-
-- The model input resolution is fixed at 416x416
-- Detection outputs are scaled back to original game window size
-- The game window must be in windowed mode and remain in the foreground
-
-## Customization Summary
-
-This implementation builds upon [moises-dias/yolo-opencv-detector](https://github.com/moises-dias/yolo-opencv-detector) with several task-specific adjustments to fit the game automation context.
-
-Modifications include:
-
-- Replacing static image logic with real-time window capture using Win32 API
-- Adapting automation logic for keyboard and mouse control in Gersang
-- Implementing a full pipeline for data collection, labeling, training, and deployment
-- Automatically generating YOLO config files based on labeled classes
-- Removing unrelated modules to focus solely on one use case
-
-These adjustments aim to create a practical and reusable workflow for real-world CV-based automation.
-
-## Credits
-
-- YOLO + OpenCV base: [moises-dias/yolo-opencv-detector](https://github.com/moises-dias/yolo-opencv-detector)
-- YOLOv4: [AlexeyAB/darknet](https://github.com/AlexeyAB/darknet)
-- Annotation tool: https://makesense.ai
 ---
 
-# YOLOv4-tiny 巨商遊戲自動打怪系統（中文說明）
+## 📂 Project Directory Overview
 
-本專案基於 YOLOv4-tiny 模型與 OpenCV，結合 Windows 原生 API 與滑鼠鍵盤模擬控制，針對 PC 遊戲《巨商》實作即時辨識與戰鬥自動化功能。
-
-## 主要功能
-
-- 使用 YOLOv4-tiny 模型進行遊戲畫面敵人即時辨識
-- 擷取遊戲視窗內容（視窗模式下）
-- 根據辨識結果自動移動滑鼠與按下攻擊鍵（例如 1、G、Space）
-- 完整資料收集、標註、訓練與推論流程整合
-
-## 使用技術
-
-| 技術 | 說明 |
-|------|------|
-| YOLOv4-tiny | 輕量級深度學習目標偵測模型 |
-| OpenCV (cv2.dnn) | 模型推論與圖像處理 |
-| win32gui / win32ui | 擷取遊戲視窗畫面 |
-| pynput | 模擬鍵盤滑鼠行為 |
-| makesense.ai | 圖像標註平台（YOLO 格式） |
-| Google Colab + AlexeyAB/darknet | 雲端訓練環境與框架 |
-
-## 專案流程
-
-1. 使用 1_generate_dataset.ipynb 擷取遊戲畫面圖片（此步驟會持續擷取遊戲畫面並自動儲存至 images/ 資料夾）
-2. 上傳至 makesense.ai 進行標註（例如：bow_skeleton、gun_skeleton）
-3. 使用 `2_label_dataset.ipynb` 自動生成訓練設定檔（obj.names、obj.data、cfg）
-4. 在 `3_yolo_model_training.ipynb` 中使用 Google Colab 執行訓練
-5. 訓練完成後，下載 `yolov4-tiny-custom_last.weights`。將此檔案放置至 `C:\Users\dasuk\OneDrive\Documents\exploration\yolov4-tiny-opencv-gersang-automation\yolov4-tiny/`
-
-   yolov4-tiny-custom_last.weights 可選放置路徑：
-    1. 放在 yolov4-tiny 資料夾內（集中管理）
-    2. 放在根目錄（例如：與 .py 程式碼同層）
-7. 確保你的推論程式使用下列設定：
-
-```python
-cfg_file_name = "C:\Users\dasuk\OneDrive\Documents\exploration\yolov4-tiny-opencv-gersang-automation\yolov4-tiny/yolov4-tiny-custom.cfg"
-weights_file_name = "yolov4-tiny-custom_last.weights"
-window_name = "Gersang"
+```
+yolov4-tiny-opencv-gersang-automation/
+├── auto_login.py            # Zero-touch Auto Login macro script
+├── run_auto_login.bat       # Helper script to launch Auto Login with Admin rights
+├── run_calibration.bat      # Calibration utility to configure launcher clicks
+├── dist/
+│   └── GersangAutoLogin.exe # Standalone compiled Windows executable
+├── 1_generate_dataset.ipynb # Phase 1: Screenshots generator for dataset
+├── 2_label_dataset.ipynb    # Phase 2: Generates YOLO custom model config files
+├── 3_yolo_model_training.ipynb # Phase 3: Colab training notebook wrapper
+├── 4_yolo_opencv_detector.py # Phase 4: In-game auto combat main bot
+├── yolov4-tiny/
+│   ├── yolov4-tiny-custom.cfg       # YOLO network architecture file
+│   └── obj.names / obj.data         # Class definitions and paths
+├── requirements.txt         # Python package dependencies
 ```
 
-7. 執行 `4_yolo_opencv_detector.ipynb`，開始即時辨識與完全自動打怪操作
+---
 
-## 注意事項
+## 🔑 How to Configure and Run
 
-- 模型輸入解析度為 416x416（YOLOv4-tiny 預設）
-- 預測框會自動換算回原始視窗的座標空間
-- 執行過程需保持《巨商》遊戲視窗在前景（視窗模式）
-- 本專案不涉及記憶體讀取或修改遊戲本體，純屬視覺辨識與模擬控制
+### Phase A: Zero-Touch Auto Login
 
-## 自訂說明
+#### 1. Setup Your Credentials
+On the first run of the script or executable, a local, Git-ignored `credentials.txt` file is automatically created in the same folder.
+Open the [credentials.txt](credentials.txt) file and replace the placeholder text with your real Gersang account credentials:
+```ini
+username=your_gersang_id
+password=your_gersang_password
+```
 
-本專案原始參考自 [moises-dias/yolo-opencv-detector](https://github.com/moises-dias/yolo-opencv-detector)，並依實際應用進行下列調整：
+#### 2. Running the Auto Login
+You can run the auto login in three ways:
 
-- 將靜態圖示範重構為即時遊戲畫面擷取
-- 加入適用於《巨商》的滑鼠與鍵盤自動控制邏輯
-- 建立標註 → 訓練 → 推論完整流程，並能針對不同類別自動產生配置
-- 刪除與應用無關的模擬器/fruit demo 模組，聚焦單一遊戲場景
+* **Method 1: Standalone Executable (Recommended)**
+  Navigate into the `dist/` directory, ensure `credentials.txt` is placed next to `GersangAutoLogin.exe`, and double-click:
+  ```
+  GersangAutoLogin.exe
+  ```
+* **Method 2: Elevated Batch Script**
+  Double-click `run_auto_login.bat`. It will prompt for Windows Administrator rights and launch the Python script:
+  ```powershell
+  run_auto_login.bat
+  ```
+* **Method 3: Raw Python Script**
+  Open an Administrator terminal and execute:
+  ```bash
+  python auto_login.py
+  ```
 
-這些調整旨在使電腦視覺模型更貼近實務，並實現遊戲中實際控制操作的自動化。
+#### 3. Coordinate Calibration (Optional)
+If your launcher skin has custom dimensions or buttons, double-click `run_calibration.bat` to run the calibration tool. The terminal will guide you to click on your Account field, Password field, and Enter Game button, generating perfect relative coordinates to copy and paste into the script configuration section.
+
+---
+
+### Phase B: YOLOv4-tiny Auto Combat
+
+#### 1. Image Collection (Dataset Generation)
+1. Open Gersang in **Windowed Mode**. Ensure the window title bar is named exactly `Gersang`.
+2. Open a terminal in the project directory and run:
+   ```bash
+   jupyter notebook
+   ```
+3. Open `1_generate_dataset.ipynb` and run the cells. The script will capture screenshots of the game window client area every `0.3` seconds and save them inside `images/`.
+
+#### 2. Labeling & Annotation
+1. Open [makesense.ai](https://www.makesense.ai/) in your browser.
+2. Drag all screenshots from your `images/` directory into the workspace.
+3. Select **Object Detection** and draw bounding boxes around target enemies, labeling them (e.g., `bow_skeleton`).
+4. Go to **Actions** > **Export Annotations** and download the annotations as a **Single .zip package in YOLO format**.
+5. Extract the `.zip` file and place all `.txt` label files together with their corresponding `.jpg` images inside the `shuffled_images/` directory.
+
+#### 3. Config Generation
+1. In `2_label_dataset.ipynb`, declare your target class list (e.g. `classes = ["bow_skeleton"]`).
+2. Run the cells to automatically package `yolov4-tiny/obj.zip` and generate updated `obj.names`, `obj.data`, and `yolov4-tiny-custom.cfg` configuration files.
+
+#### 4. Model Training (Google Colab)
+1. Upload the entire `yolov4-tiny` folder to the root of your Google Drive.
+2. Open Google Colab and upload the training notebook `3_yolo_model_training.ipynb`.
+3. Set your runtime type to **GPU** (T4 GPU).
+4. Run the training cells. Training checkpoints will automatically sync back to your Google Drive `/yolov4-tiny/training/` directory.
+
+#### 5. Deploying the Bot
+1. Download the finished weight file `yolov4-tiny-custom_last.weights` from your Google Drive.
+2. Place the weights file in the root of your project directory (alongside `4_yolo_opencv_detector.py`).
+3. Right-click `run_detect_and_click.bat` and select **Run as Administrator** to launch the combat bot.
+4. Press `q` while focusing the OpenCV display window to stop the bot.
+
+---
+
+## 📝 Technical Notes
+
+- The YOLO model input resolution is configured at `416x416`.
+- Bounding-box detection positions are automatically re-scaled back to native window sizes to guarantee mouse aiming accuracy.
+- The game window must run in windowed mode and remain in the foreground for hardware controls to function.
+
+## 🤝 Credits
+
+- YOLOv4 training: [AlexeyAB/darknet](https://github.com/AlexeyAB/darknet)
+- Annotation tool: [makesense.ai](https://www.makesense.ai/)
