@@ -24,8 +24,6 @@ except Exception:
         pass
 
 # --- CONFIGURATION ---
-DEFAULT_USERNAME = "dgaming97"
-DEFAULT_PASSWORD = "dasuki97"
 
 # Path to the game launcher executable
 LAUNCHER_PATH = r"C:\MangoT5\PSTW\52GSlogin.exe"
@@ -350,26 +348,27 @@ def perform_auto_fill(hwnd, username, password):
 
 
 def load_credentials():
-    """Loads the username and password from a local credentials.txt file, auto-creating a template if missing."""
+    """Loads the username and password from a local credentials.txt file, auto-creating a template and exiting if missing."""
     script_dir = os.path.dirname(os.path.abspath(__file__))
     credentials_path = os.path.join(script_dir, "credentials.txt")
     
-    # If the credentials file does not exist, create it with current default template values
+    # If the credentials file does not exist, create a blank template and exit
     if not os.path.exists(credentials_path):
         try:
             with open(credentials_path, "w", encoding="utf-8") as f:
                 f.write("# Gersang Auto Login Credentials\n")
-                f.write("# Format can be key-value (e.g. username=your_id) or simple line-by-line.\n\n")
-                f.write(f"username={DEFAULT_USERNAME}\n")
-                f.write(f"password={DEFAULT_PASSWORD}\n")
-            print(f"\n[Notice] Created credentials template at: {credentials_path}")
-            print("Please open this file and configure your real username and password.")
+                f.write("# Enter your real username and password below, then save this file.\n")
+                f.write("# Format: key-value (e.g. username=your_id) or simple line-by-line.\n\n")
+                f.write("username=ENTER_YOUR_USERNAME_HERE\n")
+                f.write("password=ENTER_YOUR_PASSWORD_HERE\n")
+            print(f"\n[Error] Created credentials template at: {credentials_path}")
+            print("Please open credentials.txt, configure your real username and password, and run the script again.")
         except Exception as e:
-            print(f"Error creating credentials.txt: {e}")
-        return DEFAULT_USERNAME, DEFAULT_PASSWORD
+            print(f"Error creating credentials.txt template: {e}")
+        sys.exit(1)
 
-    username = DEFAULT_USERNAME
-    password = DEFAULT_PASSWORD
+    username = ""
+    password = ""
     
     try:
         with open(credentials_path, "r", encoding="utf-8") as f:
@@ -391,10 +390,18 @@ def load_credentials():
         if len(parsed_values) >= 2:
             password = parsed_values[1]
             
-        print(f"\nLoaded login credentials from credentials.txt (Username: {username})")
     except Exception as e:
-        print(f"Error reading credentials.txt: {e}. Using defaults.")
+        print(f"Error reading credentials.txt: {e}")
+        sys.exit(1)
         
+    # Validate that real credentials have been configured
+    if not username or not password or "ENTER_YOUR_" in username or "ENTER_YOUR_" in password:
+        print(f"\n[Error] Invalid or placeholder credentials detected in credentials.txt!")
+        print(f"File path: {credentials_path}")
+        print("Please edit the file, enter your real credentials, and try again.")
+        sys.exit(1)
+        
+    print(f"\nLoaded login credentials successfully (Username: {username})")
     return username, password
 
 
@@ -440,7 +447,7 @@ def main():
     # Poll for window to appear (wait up to 15 seconds)
     print("Waiting for launcher window to appear...")
     windows = []
-    for i in range(30):
+    for i in range(300):
         time.sleep(0.5)
         windows = list_active_windows()
         if windows:
