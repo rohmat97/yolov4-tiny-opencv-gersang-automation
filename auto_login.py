@@ -24,8 +24,8 @@ except Exception:
         pass
 
 # --- CONFIGURATION ---
-DEFAULT_USERNAME = "test123"
-DEFAULT_PASSWORD = "asd123"
+DEFAULT_USERNAME = "dgaming97"
+DEFAULT_PASSWORD = "dasuki97"
 
 # Path to the game launcher executable
 LAUNCHER_PATH = r"C:\MangoT5\PSTW\52GSlogin.exe"
@@ -349,6 +349,55 @@ def perform_auto_fill(hwnd, username, password):
     print("Auto-Fill complete!")
 
 
+def load_credentials():
+    """Loads the username and password from a local credentials.txt file, auto-creating a template if missing."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    credentials_path = os.path.join(script_dir, "credentials.txt")
+    
+    # If the credentials file does not exist, create it with current default template values
+    if not os.path.exists(credentials_path):
+        try:
+            with open(credentials_path, "w", encoding="utf-8") as f:
+                f.write("# Gersang Auto Login Credentials\n")
+                f.write("# Format can be key-value (e.g. username=your_id) or simple line-by-line.\n\n")
+                f.write(f"username={DEFAULT_USERNAME}\n")
+                f.write(f"password={DEFAULT_PASSWORD}\n")
+            print(f"\n[Notice] Created credentials template at: {credentials_path}")
+            print("Please open this file and configure your real username and password.")
+        except Exception as e:
+            print(f"Error creating credentials.txt: {e}")
+        return DEFAULT_USERNAME, DEFAULT_PASSWORD
+
+    username = DEFAULT_USERNAME
+    password = DEFAULT_PASSWORD
+    
+    try:
+        with open(credentials_path, "r", encoding="utf-8") as f:
+            lines = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
+            
+        parsed_values = []
+        for line in lines:
+            if "=" in line:
+                key, val = line.split("=", 1)
+                parsed_values.append(val.strip())
+            elif ":" in line:
+                key, val = line.split(":", 1)
+                parsed_values.append(val.strip())
+            else:
+                parsed_values.append(line)
+                
+        if len(parsed_values) >= 1:
+            username = parsed_values[0]
+        if len(parsed_values) >= 2:
+            password = parsed_values[1]
+            
+        print(f"\nLoaded login credentials from credentials.txt (Username: {username})")
+    except Exception as e:
+        print(f"Error reading credentials.txt: {e}. Using defaults.")
+        
+    return username, password
+
+
 def main():
     # 1. Check if calibration is requested via command line arguments
     if len(sys.argv) > 1 and sys.argv[1] == "--calibrate":
@@ -370,9 +419,7 @@ def main():
     print("=" * 50)
     print("              GERSANG FAST AUTO LOGIN")
     print("=" * 50)
-    
-    user = DEFAULT_USERNAME
-    pwd = DEFAULT_PASSWORD
+    user, pwd = load_credentials()
 
     print("\nStarting launcher process...")
     if os.path.exists(LAUNCHER_PATH):
