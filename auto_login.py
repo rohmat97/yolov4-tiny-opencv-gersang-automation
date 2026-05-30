@@ -25,8 +25,9 @@ except Exception:
 
 # --- CONFIGURATION ---
 
-# Path to the game launcher executable
-LAUNCHER_PATH = r"C:\MangoT5\PSTW\52GSlogin.exe"
+# Path to the game launcher executable (resolved dynamically relative to script/exe location for 100% stability)
+_BASE_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+LAUNCHER_PATH = os.path.abspath(os.path.join(_BASE_DIR, r"../52GSlogin.exe"))
 
 # Default relative click coordinates (as percentage of launcher window width/height)
 # You can use the Calibration Mode to find the exact percentages for your launcher!
