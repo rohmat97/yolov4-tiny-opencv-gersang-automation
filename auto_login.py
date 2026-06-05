@@ -217,16 +217,41 @@ def wait_for_launcher_update_check():
     time.sleep(5.0)
     
 
-def wait_for_game_launched(timeout=30):
-    """Waits until the game window ('Gersang') is open and active on screen."""
-    print("\nWaiting for game client ('Gersang') to launch...")
+def wait_for_game_launched(timeout=60):
+    """Waits until the game window (matching game keywords) is open and active on screen."""
+    print("\nWaiting for game client to launch...")
     start_time = time.time()
+    
+    # Match game window titles but exclude launcher
+    game_keywords = ["Gersang", "巨商", "掌門人", "天下第一商"]
+    
     while time.time() - start_time < timeout:
-        # Search natively for the newly created game client window
-        hwnd = win32gui.FindWindow(None, "Gersang")
-        if hwnd and win32gui.IsWindowVisible(hwnd):
-            print("\nGame client ('Gersang') has successfully launched!")
+        found_hwnd = None
+        
+        def win_enum_handler(hwnd, ctx):
+            nonlocal found_hwnd
+            if win32gui.IsWindowVisible(hwnd):
+                title = win32gui.GetWindowText(hwnd)
+                if title:
+                    lower_title = title.lower()
+                    # Ignore typical editor/terminal windows
+                    if any(ignored in lower_title for ignored in ["visual studio", "code", "editor", "python", "terminal", "cmd.exe", "powershell"]):
+                        return
+                    # Ignore launcher window
+                    if "52gslogin" in lower_title:
+                        return
+                    # Check game keywords
+                    for keyword in game_keywords:
+                        if keyword.lower() in lower_title:
+                            found_hwnd = hwnd
+                            break
+                            
+        win32gui.EnumWindows(win_enum_handler, None)
+        
+        if found_hwnd:
+            print("\nGame client has successfully launched!")
             return True
+            
         print(f"Checking for game client... Time elapsed: {int(time.time() - start_time)}s", end="\r")
         time.sleep(1.0)
         
@@ -234,11 +259,66 @@ def wait_for_game_launched(timeout=30):
     return False
 
 
+
 def perform_auto_fill(hwnd, username, password):
     """Clicks on the fields and automatically injects credentials using clipboard pasting."""
     print(f"\nStarting Hardware Auto-Fill sequence...")
-    focus_window(hwnd)
-    time.sleep(0.6)  # Give Windows extra time to complete focus and Z-order transitions
+    focus_window(hwnd)  # Crucial: bring window to foreground so screen color scanning works
+    time.sleep(2)  # Give Windows extra time to complete focus and Z-order transitions
+    
+    # 3. Wait for the 'Enter Game' button to become active (matching the golden diamond color of the picture)
+    print("\nWaiting for the 'Enter Game' button to become active...")
+    
+    # Poll color every 1 second until the button matches the golden-beige active state
+    # We scan the entire button region on screen to be 100% robust against title bar offsets, borders, and DPI scaling!
+    is_ready = False
+    while not is_ready:
+        # Re-fetch the current window location in case it was dragged or moved
+        left, top, w, h = get_window_rect(hwnd)
+        
+        # Define search region coordinates using ClientToScreen (independent of window borders/title bar)
+        min_x, min_y = get_client_coord(hwnd, 0.75, 0.40)
+        max_x, max_y = get_client_coord(hwnd, 0.98, 0.80)
+        
+        hdc = win32gui.GetDC(0)
+        gold_pixel_count = 0
+        center_rgb = (0, 0, 0)
+        
+        try:
+            # Sample the exact assumed relative center for diagnostic console output
+            btn_x, btn_y = get_client_coord(hwnd, LOGIN_BTN_PCT["x"], LOGIN_BTN_PCT["y"])
+            center_val = win32gui.GetPixel(hdc, btn_x, btn_y)
+            center_rgb = (center_val & 0xff, (center_val >> 8) & 0xff, (center_val >> 16) & 0xff)
+            
+            # Scan the region with a step of 5 pixels (extremely fast, completes in < 2ms)
+            for y in range(min_y, max_y, 5):
+                for x in range(min_x, max_x, 5):
+                    color_val = win32gui.GetPixel(hdc, x, y)
+                    r = color_val & 0xff
+                    g = (color_val >> 8) & 0xff
+                    b = (color_val >> 16) & 0xff
+                    
+                    # Golden/beige active button color criteria (tuned exactly to login_button.bmp):
+                    if (150 <= r <= 255) and (120 <= g <= 255) and (80 <= b <= 220) and (r > g) and (g > b) and (r - b >= 15):
+                        gold_pixel_count += 1
+                        if gold_pixel_count >= 1: # We found at least 1 active golden pixels
+                            is_ready = True
+                            break
+                if is_ready:
+                    break
+        finally:
+            win32gui.ReleaseDC(0, hdc)
+            
+        if is_ready:
+            print(f"Detected active button! Golden pixel count in region: {gold_pixel_count}")
+            print("Launcher is READY.")
+            break
+            
+        print(f"Checking... Button is not active yet (waiting for update check). Center pixel color: RGB={center_rgb}")
+        time.sleep(0.1)
+
+        
+    
     
     # 1. Paste username directly (since the launcher automatically focuses the Account ID field on startup)
     print("Pasting Username...")
@@ -263,60 +343,13 @@ def perform_auto_fill(hwnd, username, password):
     with keyboard.pressed(Key.ctrl):
         keyboard.press('v')
         keyboard.release('v')
-    time.sleep(0.3)
     
-    # 3. Wait for the 'Enter Game' button to become active (matching the golden diamond color of the picture)
-    print("\nWaiting for the 'Enter Game' button to become active...")
-    
-    # Poll color every 1 second until the button matches the golden-beige active state
-    # We scan the entire button region on screen to be 100% robust against title bar offsets, borders, and DPI scaling!
-    while True:
-        # Re-fetch the current window location in case it was dragged or moved
-        left, top, w, h = get_window_rect(hwnd)
-        
-        # Define search region coordinates using ClientToScreen (independent of window borders/title bar)
-        min_x, min_y = get_client_coord(hwnd, 0.75, 0.40)
-        max_x, max_y = get_client_coord(hwnd, 0.98, 0.80)
-        
-        hdc = win32gui.GetDC(0)
-        gold_pixel_count = 0
-        center_rgb = (0, 0, 0)
-        
-        try:
-            # Sample the exact assumed relative center for diagnostic console output
-            btn_x, btn_y = get_client_coord(hwnd, LOGIN_BTN_PCT["x"], LOGIN_BTN_PCT["y"])
-            center_val = win32gui.GetPixel(hdc, btn_x, btn_y)
-            center_rgb = (center_val & 0xff, (center_val >> 8) & 0xff, (center_val >> 16) & 0xff)
-            
-            # Scan the region with a step of 3 pixels (extremely fast, completes in < 2ms)
-            for y in range(min_y, max_y, 5):
-                for x in range(min_x, max_x, 5):
-                    color_val = win32gui.GetPixel(hdc, x, y)
-                    r = color_val & 0xff
-                    g = (color_val >> 8) & 0xff
-                    b = (color_val >> 16) & 0xff
-                    
-                    # Golden/beige active button color criteria:
-                    if (170 <= r <= 255) and (140 <= g <= 245) and (100 <= b <= 210) and (r > g) and (g > b):
-                        gold_pixel_count += 1
-                        if gold_pixel_count >= 1: # We found at least 1 active golden pixels
-                            break
-                if gold_pixel_count >= 1:
-                    break
-        finally:
-            win32gui.ReleaseDC(0, hdc)
-            
-        if gold_pixel_count >= 1:
-            print(f"Detected active button! Golden pixel count in region: {gold_pixel_count}")
-            break
-            
-        print(f"Checking... Button is not active yet (waiting for update check). Center pixel color: RGB={center_rgb}")
-        time.sleep(1.0)
+    time.sleep(1)
     # 4. replace gts languange to english
     import urllib.request
     
     file_name = "ChineseT.gts"
-    dest_folder = os.path.dirname("../")
+    dest_folder = os.path.dirname(LAUNCHER_PATH)
     file_url = "https://drive.google.com/uc?export=download&id=1lGhdhtvUwZ9nef3it_ndYQeauNHbbpVQ"
     dest_path = os.path.join(dest_folder, file_name)
     
@@ -335,17 +368,20 @@ def perform_auto_fill(hwnd, username, password):
         if os.path.exists(dest_path):
             print(f"Download complete: {file_name} successfully saved to {dest_folder}")
         else:
-            print("Download failed: File not found after download attempt.")
+            print("Warning: Download completed but file not found after download attempt.")
     except Exception as e:
-        print(f"Download failed! Error: {e}")
-    
+        print(f"Warning: Download/replacement failed! Error: {e}")
+        print("Continuing with login submission anyway...")
+   
     # 5. Submit form by pressing the Enter key (No useless focus_window call here)
     print("Submitting login form by pressing Enter...")
+    time.sleep(5)
     keyboard.press(Key.enter)
-    time.sleep(0.05)
+    time.sleep(0.5)
     keyboard.release(Key.enter)
     
     print("Auto-Fill complete!")
+
 
 
 def load_credentials():
@@ -453,8 +489,8 @@ def main():
     # Poll for window to appear (wait up to 15 seconds)
     print("Waiting for launcher window to appear...")
     windows = []
-    for i in range(300):
-        time.sleep(0.5)
+    for i in range(50):
+        time.sleep(1)
         windows = list_active_windows()
         if windows:
             print("Launcher window detected!")
@@ -475,7 +511,10 @@ def main():
     
     # Perform auto fill
     perform_auto_fill(target_hwnd, user, pwd)
-    time.sleep(1)
+    
+    # Wait for the game client window to launch before exiting (ensures synchronous handoff)
+    wait_for_game_launched()
+
 
 
 
